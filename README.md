@@ -18,19 +18,5 @@ npm install
 npm run dev
 ```
 
-Abra o endereço que aparecer no terminal (normalmente http://localhost:5173).
 
-## Publicar no GitHub Pages
-
-1. Suba o projeto para um repositório no GitHub, na branch `main`.
-2. Em **Settings → Pages**, escolha **Source: GitHub Actions**.
-3. A cada `git push`, o workflow em `.github/workflows/deploy.yml` publica o site.
-
-O link fica em `https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/`.
-
-## Onde editar
-
-- `src/data/rounds.js`: rodadas do Portão de Hogwarts e o texto da explicação final.
-- `src/data/monte.js`: fases do Monte a Lista do Filch.
-- `src/data/prova.js`: banco de perguntas do treino (a primeira opção de cada pergunta é a correta; o jogo embaralha) e os geradores de perguntas com números.
-- `src/games/`: a lógica de cada jogo. `src/App.jsx`: o menu. `src/styles.css`: cores e layout.
+GitHub Pages:>
