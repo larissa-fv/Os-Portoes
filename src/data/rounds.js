@@ -1,0 +1,82 @@
+const G=c=>c.casa==='Grifinória';
+const R=[
+{t:'Rodada 1: a ordem das regras',intro:'Você é o Filch. Leia a lista de cima para baixo e decida quem passa pelo portão.',
+rules:[{x:'Permitir: alunos da Grifinória',a:'P',f:G},{x:'Barrar: Harry Potter',a:'D',f:c=>c.nome==='Harry Potter'}],
+cards:[{nome:'Hermione Granger',casa:'Grifinória',a:'P',w:'A regra 1 combinou e o Filch parou de ler.'},
+{nome:'Harry Potter',casa:'Grifinória',a:'P',w:'Surpresa: Harry é da Grifinória, então a regra 1 combina primeiro. A regra 2 nunca é lida.'},
+{nome:'Draco Malfoy',casa:'Sonserina',a:'D',w:'Nenhuma regra citou a Sonserina, então ele não passa.'}],
+L:{t:'A primeira regra que combina vale',x:'A regra de barrar o Harry ficou inútil porque veio depois da regra geral. Na ACL, o roteador lê de cima para baixo e para na primeira que combina.',c:'access-list 10 permit 192.168.20.0 0.0.0.255\naccess-list 10 deny host 192.168.20.99   ! nunca é alcançada'}},
+{t:'Rodada 2: específica primeiro',intro:'Mesma lista, agora com a ordem corrigida.',
+rules:[{x:'Barrar: Harry Potter',a:'D',f:c=>c.nome==='Harry Potter'},{x:'Permitir: alunos da Grifinória',a:'P',f:G}],
+cards:[{nome:'Harry Potter',casa:'Grifinória',a:'D',w:'Agora a regra do Harry vem primeiro e ele é barrado.'},
+{nome:'Ron Weasley',casa:'Grifinória',a:'P',w:'Não é o Harry, então a regra 1 não combina. A regra 2 o deixa passar.'},
+{nome:'Draco Malfoy',casa:'Sonserina',a:'D',w:'Nenhuma regra combina com ele.'}],
+L:{t:'Regra específica antes da geral',x:'Coloque as exceções no topo e as regras amplas embaixo.',c:'access-list 10 deny host 192.168.20.99\naccess-list 10 permit 192.168.20.0 0.0.0.255'}},
+{t:'Rodada 3: a regra invisível',intro:'A lista agora só tem uma linha.',
+rules:[{x:'Permitir: alunos da Lufa-Lufa',a:'P',f:c=>c.casa==='Lufa-Lufa'}],
+cards:[{nome:'Hannah Abbott',casa:'Lufa-Lufa',a:'P',w:'Está na regra 1.'},
+{nome:'Luna Lovegood',casa:'Corvinal',a:'D',w:'Ninguém a proibiu, mas ela não está na lista. Cai na regra invisível do final.'},
+{nome:'Cedrico Diggory',casa:'Lufa-Lufa',a:'P',w:'Está na regra 1.'}],
+L:{t:'O bloqueio invisível',x:'Toda ACL termina com um deny implícito: o que não foi permitido é bloqueado.',c:'access-list 10 permit 192.168.30.0 0.0.0.255\n! (invisível) deny any'}},
+{t:'Rodada 4: o curinga',intro:'A identificação do aluno tem quatro campos: Casa . Ano . Turma . Aluno. O último campo é curinga.',
+rules:[{x:'Permitir: Grifinória . 3 . A . qualquer aluno',a:'P',f:c=>c.casa==='Grifinória'&&c.ano===3&&c.turma==='A'}],
+cards:[{id:'Grifinória . 3 . A . 12',casa:'Grifinória',ano:3,turma:'A',a:'P',w:'Os três primeiros campos batem. O número do aluno não importa.'},
+{id:'Grifinória . 3 . B . 7',casa:'Grifinória',ano:3,turma:'B',a:'D',w:'A turma é B, e esse campo precisa ser igual.'},
+{id:'Grifinória . 3 . A . 31',casa:'Grifinória',ano:3,turma:'A',a:'P',w:'De novo: só o último campo muda, e ele é ignorado.'},
+{id:'Sonserina . 3 . A . 5',casa:'Sonserina',ano:3,turma:'A',a:'D',w:'A Casa é diferente.'}],
+L:{t:'Máscara curinga: 0 confere, 255 ignora',x:'Onde a máscara tem 0, o campo precisa ser igual. Onde tem 255, qualquer valor serve.',c:'access-list 10 permit 192.168.10.0 0.0.0.255\n! confere 192 . 168 . 10 e ignora o último número'}},
+{t:'Rodada 5: origem, destino e serviço',intro:'Agora o Filch olha também aonde o aluno vai e o que quer fazer.',
+rules:[{x:'Permitir: aluno → Biblioteca, para ler',a:'P',f:c=>c.dest==='Biblioteca'&&c.ativ==='ler'},{x:'Barrar: aluno → Biblioteca, qualquer outra atividade',a:'D',f:c=>c.dest==='Biblioteca'},{x:'Permitir: todo o resto',a:'P',f:c=>true}],
+cards:[{nome:'Aluno do 2º ano',dest:'Biblioteca',ativ:'ler',a:'P',w:'Regra 1: ler na biblioteca é permitido.'},
+{nome:'Aluno do 2º ano',dest:'Biblioteca',ativ:'duelar',a:'D',w:'A regra 1 não combina (não é ler), mas a regra 2 pega qualquer outra atividade na Biblioteca.'},
+{nome:'Aluno do 2º ano',dest:'Salão Principal',ativ:'comer',a:'P',w:'Não é Biblioteca, então cai na regra 3.'}],
+L:{t:'ACL estendida',x:'Ela olha origem, destino e o serviço (porta). Por isso é mais precisa que a padrão.',c:'permit tcp 192.168.20.0 0.0.0.255 host 192.168.30.10 eq 80\ndeny ip 192.168.20.0 0.0.0.255 host 192.168.30.10\npermit ip any any'}},
+{t:'Rodada 6: a Poção Polissuco',intro:'Alguém de fora pode se passar por aluno. A pista: de onde ele chegou.',
+rules:[{x:'Barrar: quem diz ser aluno mas chegou pelo portão de fora',a:'D',f:c=>c.diz==='aluno'&&c.por==='fora'},{x:'Permitir: todo o resto',a:'P',f:c=>true}],
+cards:[{nome:'Neville Longbottom',diz:'aluno',por:'dentro',a:'P',w:'Aluno e chegou por dentro. Tudo coerente.'},
+{nome:'«Ron Weasley»',diz:'aluno',por:'fora',a:'D',w:'Diz ser aluno, mas chegou pelo portão de fora. É a Polissuco.'},
+{nome:'Visitante querendo ir a Hogsmeade',diz:'visitante',por:'fora',a:'P',w:'Não finge ser aluno, então cai na regra 2.'}],
+L:{t:'Spoofing: endereço falso',x:'Um pacote vindo da internet não pode ter endereço de origem da rede interna. Bloqueia-se na entrada pela internet.',c:'ip access-list extended ANTI-SPOOF\n deny ip 192.168.0.0 0.0.255.255 any\n permit ip any any'}},
+{t:'Rodada 7: a Madame Rosmerta',intro:'Aqui entra a memória. O caderno diz quem pediu algo nas Três Vassouras.',caderno:['Harry Potter','Hermione Granger'],
+rules:[{x:'Permitir: entregas de pedidos que estão no caderno',a:'P',f:c=>['Harry Potter','Hermione Granger'].includes(c.para)}],
+cards:[{nome:'Cerveja amanteigada',para:'Harry Potter',a:'P',w:'Harry pediu e está no caderno.'},
+{nome:'Hidromel',para:'Ron Weasley',a:'D',w:'Ninguém anotou esse pedido. Não passa.'},
+{nome:'Suco de abóbora',para:'Hermione Granger',a:'P',w:'Hermione pediu e está no caderno.'}],
+L:{t:'Firewall stateful',x:'Ele guarda as conversas em uma tabela de estado. A resposta só passa se alguém de dentro a pediu.',c:'policy-map type inspect PM-IN-OUT\n class type inspect CM-INTERNET\n  inspect   ! ida liberada e a volta também'}},
+{t:'Rodada 8: as Casas (ZPF)',intro:'Cada Casa é uma zona. Leia o regulamento entre elas.',
+rules:[{x:'Barrar: quem ainda não passou pelo Chapéu Seletor (sem Casa)',a:'D',f:c=>c.casa==='sem Casa'},{x:'Permitir: visitas dentro da mesma Casa',a:'P',f:c=>c.casa===c.visita},{x:'Permitir: Grifinória → Corvinal, só para estudar',a:'P',f:c=>c.casa==='Grifinória'&&c.visita==='Corvinal'&&c.ativ==='estudar'}],
+cards:[{nome:'Hermione',casa:'Grifinória',visita:'Grifinória',ativ:'conversar',a:'P',w:'Mesma Casa: livre.'},
+{nome:'Hermione',casa:'Grifinória',visita:'Corvinal',ativ:'estudar',a:'P',w:'Regra 3: existe um regulamento Grifinória → Corvinal para estudar.'},
+{nome:'Ron',casa:'Grifinória',visita:'Sonserina',ativ:'duelar',a:'D',w:'Não há regulamento Grifinória → Sonserina. Entre zonas, o padrão é bloquear.'},
+{nome:'Primeiranista',casa:'sem Casa',visita:'Grifinória',ativ:'conversar',a:'D',w:'Sem Casa, sem conversa. Toda interface precisa estar em uma zona.'}],
+L:{t:'Firewall por zonas',x:'Mesma zona é livre. Entre zonas, só passa o que um par de zonas com política permitir.',c:'zone-pair security ZP-GRIF-CORV source GRIF destination CORV\n service-policy type inspect PM-ESTUDO'}}
+];
+const LB={nome:'Quem é',id:'Identificação',casa:'Casa',dest:'Quer ir a',ativ:'Para',diz:'Diz ser',por:'Chegou pelo portão de',para:'Entrega para',visita:'Visita a Casa'};
+
+export const rounds = R
+export const labels = LB
+
+export const practice = {
+  intro:
+    'No jogo, você decide um pacote por vez. No roteador de verdade, a mesma lista é lida sozinha, para milhares de pacotes por segundo, sem ninguém conferindo um a um.',
+  map: [
+    ['O Filch', 'O roteador ou firewall, no ponto em que duas redes se encontram'],
+    ['O portão', 'Uma interface do roteador. A lista é aplicada nela, na entrada (in) ou na saída (out)'],
+    ['Quem chega', 'Pacotes, cada um com origem, destino e serviço (porta)'],
+    ['A lista de regras', 'A ACL, gravada no roteador'],
+    ['A regra invisível', 'O deny implícito no fim de toda ACL'],
+    ['O campo curinga', 'A máscara curinga, como 0.0.0.255'],
+    ['Madame Rosmerta', 'O firewall stateful e a sua tabela de estado'],
+    ['As Casas', 'As zonas do ZPF, com zone-pair e policy-map'],
+  ],
+  steps: [
+    'Escreva a política em português: quem pode falar com quem, e para fazer o quê.',
+    'Escolha o tipo e o lugar: ACL padrão perto do destino, estendida perto da origem.',
+    'Escreva a lista, com a regra específica antes da geral.',
+    'Aplique na interface e na direção certas. Sem isso, a lista não faz nada.',
+    'Teste: abra um site, tente o que deveria ser bloqueado e confira os contadores com show access-lists.',
+    'Acompanhe os registros (logs) e revise a lista de tempos em tempos.',
+  ],
+  care:
+    'Um erro de ordem ou de interface pode derrubar a rede inteira ou deixar o portão aberto. Por isso se testa primeiro em laboratório, como o Packet Tracer.',
+}
