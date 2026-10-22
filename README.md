@@ -32,7 +32,7 @@ npm run dev
 
 Depois, acesse no navegador o endereço local indicado no terminal.
 
-## 🔗 Projeto
+##  Projeto
 
 [Repositório no GitHub](https://github.com/larissa-fv/Os-Portoes)
 
@@ -41,3 +41,7 @@ Depois, acesse no navegador o endereço local indicado no terminal.
 Porque estudar regras, endereços IP e configurações pode ficar abstrato quando tudo se resume a comandos e teoria. A ideia de um portão com regras de entrada ajuda a visualizar a lógica das ACLs e a entender por que a ordem das regras importa.
 
 O projeto é uma forma de estudar, testar e aprender com os próprios erros, aproximando os conceitos de redes de situações mais fáceis de visualizar.
+
+
+## O que você acha de testar? 
+https://larissa-fv.github.io/Os-Portoes/
